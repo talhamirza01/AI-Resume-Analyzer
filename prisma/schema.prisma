@@ -1,0 +1,102 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Plan {
+  FREE
+  PRO
+}
+
+model User {
+  id        String   @id @default(cuid())
+  clerkId   String   @unique
+  email     String   @unique
+  name      String?
+  imageUrl  String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  subscription Subscription?
+  resumes      Resume[]
+  analyses     ResumeAnalysis[]
+  coverLetters CoverLetter[]
+  jobMatches   JobMatch[]
+}
+
+model Subscription {
+  id            String   @id @default(cuid())
+  userId        String   @unique
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  plan          Plan     @default(FREE)
+  analysesUsed  Int      @default(0)
+  analysisLimit Int      @default(5)
+  expiresAt     DateTime?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+model Resume {
+  id           String   @id @default(cuid())
+  userId       String
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title        String
+  content      Json
+  pdfUrl       String?
+  cloudinaryId String?
+  isBuilder    Boolean  @default(false)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  analyses   ResumeAnalysis[]
+  jobMatches JobMatch[]
+}
+
+model ResumeAnalysis {
+  id                 String   @id @default(cuid())
+  userId             String
+  user               User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  resumeId           String?
+  resume             Resume?  @relation(fields: [resumeId], references: [id], onDelete: SetNull)
+  resumeText         String   @db.Text
+  jobDescription     String?  @db.Text
+  atsScore           Int
+  strengths          Json
+  weaknesses         Json
+  missingKeywords    Json
+  matchingSkills     Json
+  improvements       Json
+  careerSuggestions  Json
+  interviewQuestions Json
+  createdAt          DateTime @default(now())
+}
+
+model CoverLetter {
+  id             String   @id @default(cuid())
+  userId         String
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  resumeId       String?
+  jobTitle       String?
+  companyName    String?
+  jobDescription String?  @db.Text
+  content        String   @db.Text
+  createdAt      DateTime @default(now())
+}
+
+model JobMatch {
+  id              String   @id @default(cuid())
+  userId          String
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  resumeId        String?
+  resume          Resume?  @relation(fields: [resumeId], references: [id], onDelete: SetNull)
+  jobDescription  String   @db.Text
+  matchScore      Int
+  matchingSkills  Json
+  missingKeywords Json
+  improvements    Json
+  createdAt       DateTime @default(now())
+}
